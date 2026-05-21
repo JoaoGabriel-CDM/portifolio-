@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usuário | Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="usuario.css">
+</head>
+<body class="usuario-page">
+    <main class="user-interface" id="user-interface">
+        <div class="user-topbar">
+            <a class="back-button" href="dashboard/dash.html">
+                <i class="fas fa-arrow-left"></i> Voltar ao Dashboard
+            </a>
+        </div>
+        <div class="user-panel-tabs">
+            <button class="tab-button active" data-tab="perfil">Perfil</button>
+            <button class="tab-button" data-tab="registro">Registro</button>
+            <button class="tab-button" data-tab="senha">Senha</button>
+            <button class="tab-button" data-tab="configuracoes">Configurações</button>
+        </div>
+
+        <section class="tab-content active" data-tab="perfil">
+            <h2>Perfil do Usuário</h2>
+            <p>Edite seus dados básicos e visualize informações de acesso.</p>
+            <div class="panel-row">
+                <div class="panel-card-small">
+                    <h3>Nome</h3>
+                    <p id="profileName">João Gabriel</p>
+                </div>
+                <div class="panel-card-small">
+                    <h3>Email</h3>
+                    <p id="profileEmail">joao@email.com</p>
+                </div>
+                <div class="panel-card-small">
+                    <h3>Usuário</h3>
+                    <p id="profileUsername">joaogabriel</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="tab-content" data-tab="registro">
+            <h2>Registro</h2>
+            <p>Complete ou atualize seu cadastro para acessar o painel.</p>
+            <form class="form-grid">
+                <div class="field-group">
+                    <label>Nome completo</label>
+                    <input id="registroNome" type="text" placeholder="João Gabriel" />
+                    <span id="nameError" class="input-error"></span>
+                </div>
+
+                <div class="field-group">
+                    <label>Nome de usuário</label>
+                    <input id="registroUsername" type="text" inputmode="text" maxlength="30" pattern="[A-Za-z0-9]*" placeholder="joaogabriel" />
+                    <span id="usernameError" class="input-error"></span>
+                </div>
+
+                <div class="field-group">
+                    <label>Email</label>
+                    <input id="registroEmail" type="email" placeholder="joao@email.com" />
+                    <span id="emailError" class="input-error"></span>
+                </div>
+
+                <div class="field-group">
+                    <label>Telefone</label>
+                    <input id="telefone" type="tel" inputmode="numeric" maxlength="16" placeholder="(00) 00000-0000" />
+                    <span id="phoneError" class="input-error"></span>
+                </div>
+
+                <button id="salvarRegistro" type="button">Salvar registro</button>
+            </form>
+        </section>
+
+        <section class="tab-content" data-tab="senha">
+            <h2>Senha</h2>
+            <p>Atualize sua senha para manter sua conta segura.</p>
+            <form class="form-grid">
+                <label>Senha atual</label>
+                <input type="password" placeholder="Senha atual" />
+
+                <label>Nova senha</label>
+                <input type="password" placeholder="Nova senha" />
+
+                <label>Confirmar senha</label>
+                <input type="password" placeholder="Confirmar nova senha" />
+
+                <button type="button">Atualizar senha</button>
+            </form>
+        </section>
+
+        <section class="tab-content" data-tab="configuracoes">
+            <h2>Configurações</h2>
+            <p>Gerencie as preferências do seu painel de usuário.</p>
+            <div class="settings-list">
+                <div class="setting-item">
+                    <span>Ativar notificações</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span>Modo escuro</span>
+                    <label class="toggle-switch">
+                        <input id="toggleDarkMode" type="checkbox">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span>Relatórios semanais</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        function setDarkMode(enabled) {
+            document.body.classList.toggle('dark-mode', enabled);
+            localStorage.setItem('darkMode', enabled ? 'on' : 'off');
+        }
+
+        function updateDarkModeToggle() {
+            const toggle = document.getElementById('toggleDarkMode');
+            if (toggle) {
+                toggle.checked = document.body.classList.contains('dark-mode');
+            }
+        }
+
+        function applySavedMode() {
+            const saved = localStorage.getItem('darkMode');
+            if (saved === 'on') {
+                setDarkMode(true);
+            } else if (saved === 'off') {
+                setDarkMode(false);
+            }
+        }
+
+        function getStoredProfile() {
+            return {
+                name: localStorage.getItem('profileName') || 'João Gabriel',
+                email: localStorage.getItem('profileEmail') || 'joao@email.com',
+                username: localStorage.getItem('profileUsername') || 'joaogabriel',
+                phone: localStorage.getItem('profilePhone') || '(00) 00000-0000'
+            };
+        }
+
+        function saveProfile(profile) {
+            localStorage.setItem('profileName', profile.name);
+            localStorage.setItem('profileEmail', profile.email);
+            localStorage.setItem('profileUsername', profile.username);
+            localStorage.setItem('profilePhone', profile.phone);
+        }
+
+        function updateProfileUI(profile) {
+            const nameEl = document.getElementById('profileName');
+            const emailEl = document.getElementById('profileEmail');
+            const usernameEl = document.getElementById('profileUsername');
+            const phoneEl = document.getElementById('profilePhone');
+            if (nameEl) nameEl.textContent = profile.name;
+            if (emailEl) emailEl.textContent = profile.email;
+            if (usernameEl) usernameEl.textContent = profile.username;
+            if (phoneEl) phoneEl.textContent = profile.phone;
+
+            const nameInput = document.getElementById('registroNome');
+            const emailInput = document.getElementById('registroEmail');
+            const usernameInput = document.getElementById('registroUsername');
+            const phoneInput = document.getElementById('telefone');
+            if (nameInput) nameInput.value = profile.name;
+            if (emailInput) emailInput.value = profile.email;
+            if (usernameInput) usernameInput.value = profile.username;
+            if (phoneInput) phoneInput.value = profile.phone;
+        }
+
+        function showInputError(inputId, message) {
+            const input = document.getElementById(inputId);
+            let errorId = 'phoneError';
+            if (inputId === 'registroEmail') errorId = 'emailError';
+            if (inputId === 'registroUsername') errorId = 'usernameError';
+            const error = document.getElementById(errorId);
+            if (input) input.classList.add('invalid-input');
+            if (error) error.textContent = message;
+        }
+
+        function clearInputError(inputId) {
+            const input = document.getElementById(inputId);
+            let errorId = 'phoneError';
+            if (inputId === 'registroEmail') errorId = 'emailError';
+            if (inputId === 'registroUsername') errorId = 'usernameError';
+            const error = document.getElementById(errorId);
+            if (input) input.classList.remove('invalid-input');
+            if (error) error.textContent = '';
+        }
+
+        function validateEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        function validatePhone(phone) {
+            return /^\(\d{2}\) \d{5}-\d{4}$/.test(phone);
+        }
+
+        function validateUsername(username) {
+            if (!username) return false;
+            if (!/^[A-Za-z0-9]+$/.test(username)) return false;
+            const letters = (username.match(/[A-Za-z]/g) || []).length;
+            const numbers = (username.match(/[0-9]/g) || []).length;
+            return letters <= 20 && numbers <= 10;
+        }
+
+        function formatUsername(value) {
+            const cleaned = value.replace(/[^A-Za-z0-9]/g, '');
+            let letters = 0;
+            let numbers = 0;
+            let result = '';
+            for (const char of cleaned) {
+                if (/[A-Za-z]/.test(char)) {
+                    if (letters >= 20) continue;
+                    letters += 1;
+                    result += char;
+                } else if (/[0-9]/.test(char)) {
+                    if (numbers >= 10) continue;
+                    numbers += 1;
+                    result += char;
+                }
+            }
+            return result;
+        }
+
+        function initProfile() {
+            const profile = getStoredProfile();
+            updateProfileUI(profile);
+
+            const saveButton = document.getElementById('salvarRegistro');
+            if (saveButton) {
+                saveButton.addEventListener('click', () => {
+                    const name = document.getElementById('registroNome').value.trim() || profile.name;
+                    const emailInput = document.getElementById('registroEmail');
+                    const phoneInput = document.getElementById('telefone');
+                    const username = document.getElementById('registroUsername').value.trim() || profile.username;
+                    const email = emailInput ? emailInput.value.trim() : profile.email;
+                    const phone = phoneInput ? phoneInput.value.trim() : profile.phone;
+
+                    let valid = true;
+                    clearInputError('registroUsername');
+                    clearInputError('registroEmail');
+                    clearInputError('telefone');
+
+                    if (!validateUsername(username)) {
+                        showInputError('registroUsername', 'Use apenas letras e números (até 20 letras e 10 números).');
+                        valid = false;
+                    }
+
+                    if (!validateEmail(email)) {
+                        showInputError('registroEmail', 'Digite um email válido.');
+                        valid = false;
+                    }
+
+                    if (!validatePhone(phone)) {
+                        showInputError('telefone', 'Telefone deve ter o formato (00) 00000-0000.');
+                        valid = false;
+                    }
+
+                    if (!valid) return;
+
+                    const updated = { name, email, username, phone };
+                    saveProfile(updated);
+                    updateProfileUI(updated);
+                    alert('Informações salvas com sucesso!');
+                });
+            }
+        }
+
+        function formatPhone(value) {
+            const digits = value.replace(/\D/g, '').slice(0, 11);
+            const d1 = digits.slice(0, 2);
+            const d2 = digits.slice(2, 7);
+            const d3 = digits.slice(7, 11);
+            if (!d1) return '';
+            if (!d2) return `(${d1}`;
+            if (!d3) return `(${d1}) ${d2}`;
+            return `(${d1}) ${d2}-${d3}`;
+        }
+
+        function initPhoneMask() {
+            const phoneInput = document.getElementById('telefone');
+            if (!phoneInput) return;
+
+            phoneInput.addEventListener('input', (event) => {
+                const formatted = formatPhone(event.target.value);
+                event.target.value = formatted;
+            });
+        }
+
+        function initUsernameMask() {
+            const usernameInput = document.getElementById('registroUsername');
+            if (!usernameInput) return;
+
+            usernameInput.addEventListener('input', (event) => {
+                const formatted = formatUsername(event.target.value);
+                event.target.value = formatted;
+            });
+        }
+
+        function openUserTab(tabName) {
+            const buttons = document.querySelectorAll('.tab-button');
+            const contents = document.querySelectorAll('.tab-content');
+
+            buttons.forEach((button) => {
+                button.classList.toggle('active', button.dataset.tab === tabName);
+            });
+
+            contents.forEach((content) => {
+                content.classList.toggle('active', content.dataset.tab === tabName);
+            });
+        }
+
+        function initUserTabs() {
+            const buttons = document.querySelectorAll('.tab-button');
+            buttons.forEach((button) => {
+                button.addEventListener('click', () => {
+                    openUserTab(button.dataset.tab);
+                });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            applySavedMode();
+            initUserTabs();
+            initProfile();
+
+            const darkToggle = document.getElementById('toggleDarkMode');
+            if (darkToggle) {
+                darkToggle.addEventListener('change', (event) => {
+                    setDarkMode(event.target.checked);
+                });
+                updateDarkModeToggle();
+            }
+
+            initPhoneMask();
+            initUsernameMask();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Moderno</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="dash.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <a class="back-portfolio" href="../index.html" aria-label="Voltar ao Portfolio">←</a>
+                <div>
+                    <h1><i class="fas fa-chart-line"></i> Dashboard</h1>
+                </div>
+            </div>
+            <div class="header-info">
+                <div class="date-time">
+                    <p id="datetime"></p>
+                </div>
+                <div class="user-menu">
+                    <a class="user-button" href="../usuario.html">
+                        <span id="dashboardAvatar" class="avatar">JG</span>
+                        <span id="dashboardUserName" class="user-name">João Gabriel</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="cards-grid">
+            <div class="card">
+                <div class="card-icon"><i class="fas fa-dollar-sign"></i></div>
+                <div id="card-receita-titulo" class="card-title">Receita Total</div>
+                <div id="card-receita-valor" class="card-value">R$ 0,00</div>
+                <div id="card-receita-growth" class="card-growth"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-icon"><i class="fas fa-chart-line"></i></div>
+                <div class="card-title">Lucro</div>
+                <div id="card-lucro-valor" class="card-value">R$ 0,00</div>
+                <div id="card-lucro-growth" class="card-growth"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-icon"><i class="fas fa-boxes"></i></div>
+                <div class="card-title">CAMISETAS RESTANTES</div>
+                <div id="card-estoque-restante-valor" class="card-value">0</div>
+                <div id="card-estoque-growth" class="card-growth"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-icon"><i class="fas fa-shopping-cart"></i></div>
+                <div class="card-title">Vendas</div>
+                <div id="card-vendas-valor" class="card-value">0</div>
+                <div id="card-vendas-growth" class="card-growth"></div>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid">
+            <!-- Bar Chart -->
+            <div class="chart-container">
+                <h3 id="chartTitle" class="chart-title">Vendas por Estoque</h3>
+                <div class="bar-chart">
+                    <div id="barra-amarela" class="bar">
+                        <span class="bar-value">0</span>
+                        <span class="bar-label">AMARELA</span>
+                    </div>
+                    <div id="barra-azul" class="bar">
+                        <span class="bar-value">0</span>
+                        <span class="bar-label">AZUL</span>
+                    </div>
+                    <div id="barra-amar-fem" class="bar">
+                        <span class="bar-value">0</span>
+                        <span class="bar-label">AMAR.FEM</span>
+                    </div>
+                    <div id="barra-azul-fem" class="bar">
+                        <span class="bar-value">0</span>
+                        <span class="bar-label">AZUL.FEM</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Chart -->
+            <div class="chart-container">
+                <h3 class="chart-title">Progresso de Metas</h3>
+
+                <div id="progresso-amarela" class="progress-item">
+                    <div class="progress-label">
+                        <span class="progress-name">AMARELA</span>
+                        <span class="progress-percent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div id="progresso-azul" class="progress-item">
+                    <div class="progress-label">
+                        <span class="progress-name">AZUL</span>
+                        <span class="progress-percent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div id="progresso-amar-fem" class="progress-item">
+                    <div class="progress-label">
+                        <span class="progress-name">AMAR.FEM</span>
+                        <span class="progress-percent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div id="progresso-azul-fem" class="progress-item">
+                    <div class="progress-label">
+                        <span class="progress-name">AZUL.FEM</span>
+                        <span class="progress-percent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity Table -->
+        <div class="table-container">
+            <h3 class="chart-title">Atividade Recente</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pedido</th>
+                        <th>Cliente</th>
+                        <th>Data</th>
+                        <th>Valor</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="recentActivityBody"></tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script>
+        function updateDateTime() {
+            const now = new Date();
+            const options = {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+            };
+            document.getElementById("datetime").textContent = now.toLocaleDateString("pt-BR", options);
+        }
+
+        function applySavedMode() {
+            const saved = localStorage.getItem("darkMode");
+            if (saved === "on") {
+                document.body.classList.add("dark-mode");
+            } else {
+                document.body.classList.remove("dark-mode");
+            }
+        }
+
+        function formatInitials(fullName) {
+            const parts = fullName.trim().split(/\s+/).filter(Boolean);
+            if (parts.length === 0) return "??";
+            if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        }
+
+        function applyStoredProfile() {
+            const name = localStorage.getItem("profileName") || "João Gabriel";
+            const avatar = document.getElementById("dashboardAvatar");
+            const nameEl = document.getElementById("dashboardUserName");
+            if (avatar) avatar.textContent = formatInitials(name);
+            if (nameEl) nameEl.textContent = name.length > 30 ? name.slice(0, 30) + "…" : name;
+        }
+
+        function normalizeText(value) {
+            return String(value || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .trim();
+        }
+
+        function parseCSV(csvText) {
+            return csvText
+                .replace(/\r/g, '')
+                .split('\n')
+                .map((line) => line.trim())
+                .filter((line) => line.split(';').some((cell) => cell.trim() !== ''))
+                .map((line) => line.split(';').map((cell) => cell.trim()));
+        }
+
+        function toNumber(value) {
+            const numeric = parseFloat(
+                String(value || '')
+                    .replace(/\./g, '')
+                    .replace(/,/g, '.')
+                    .replace(/[^0-9.\-]/g, '')
+            );
+            return Number.isNaN(numeric) ? 0 : numeric;
+        }
+function formatCurrency(value) {
+            const number = toNumber(value);
+            return number.toLocaleString("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function findHeaderIndex(rows, terms) {
+            return rows.findIndex((row) =>
+                terms.every((term) => row.some((cell) => normalizeText(cell).includes(normalizeText(term))))
+            );
+        }
+
+        function getColumnIndex(row, term) {
+            return row.findIndex((cell) => normalizeText(cell).includes(normalizeText(term)));
+        }
+
+        function setCardValues(summary) {
+            const receitaEl = document.getElementById("card-receita-valor");
+            const lucroEl = document.getElementById("card-lucro-valor");
+            const vendasEl = document.getElementById("card-vendas-valor");
+            const estoqueEl = document.getElementById("card-estoque-restante-valor");
+            if (receitaEl) {
+                receitaEl.textContent = formatCurrency(summary.receita);
+            }
+            if (lucroEl) {
+                lucroEl.textContent = formatCurrency(summary.lucro);
+                lucroEl.style.color = summary.lucro < 0 ? "#ff4d4f" : "";
+            }
+            if (vendasEl) {
+                vendasEl.textContent = String(summary.totalVendas);
+            }
+            if (estoqueEl) {
+                estoqueEl.textContent = String(summary.totalEstoqueRestante);
+            }
+        }
+
+        function updateProgress(id, percent) {
+            const progressItem = document.getElementById(id);
+            if (!progressItem) return;
+            const percentEl = progressItem.querySelector(".progress-percent");
+            const fillEl = progressItem.querySelector(".progress-fill");
+            if (percentEl) {
+                percentEl.textContent = `${percent}%`;
+            }
+            if (fillEl) {
+                fillEl.style.width = `${percent}%`;
+            }
+        }
+
+        function renderClientRows(clients) {
+            const tbody = document.getElementById("recentActivityBody");
+            if (!tbody) return;
+            tbody.innerHTML = "";
+            clients.forEach((client, index) => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>#PED-${String(index + 1).padStart(3, "0")}</td>
+                    <td>${client.name}</td>
+                    <td>${client.date}</td>
+                    <td>${client.value}</td>
+                    <td><span class="status-badge status-active"><i class="fas fa-check-circle"></i> Completado</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        async function carregarDadosDashboard() {
+            try {
+                const response = await fetch("Gastos.Ganhos.csv");
+                if (!response.ok) {
+                    throw new Error(`Falha no fetch: ${response.status}`);
+                }
+                const csvText = await response.text();
+                const rows = parseCSV(csvText);
+
+                const summaryHeaderIndex = findHeaderIndex(rows, ["Total Recebido", "Lucro"]);
+                if (summaryHeaderIndex >= 0 && rows[summaryHeaderIndex + 1]) {
+                    const headerRow = rows[summaryHeaderIndex];
+                    const dataRow = rows[summaryHeaderIndex + 1];
+                    const receitaIndex = getColumnIndex(headerRow, "Total Recebido");
+                    const lucroIndex = getColumnIndex(headerRow, "Lucro");
+                    setCardValues({
+                        receita: dataRow[receitaIndex] || "0",
+                        lucro: dataRow[lucroIndex] || "0",
+                        totalVendas: 0,
+                        totalEstoqueRestante: 0
+                    });
+                }
+
+                const stockBlocks = ["AMARELA", "AZUL", "AMAR.FEM", "AZUL.FEM"].map((name) => ({
+                    name,
+                    total: 0,
+                    sold: 0,
+                    remaining: 0
+                }));
+
+                for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+                    const row = rows[rowIndex];
+                    const blockName = normalizeText(row[13] || "");
+                    const blockIndex = stockBlocks.findIndex((block) => normalizeText(block.name) === blockName);
+                    if (blockIndex < 0) continue;
+                    const isHeaderRow = normalizeText(row[14] || "") === "quantidade" &&
+                        normalizeText(row[15] || "") === "quantidade vendida" &&
+                        normalizeText(row[16] || "") === "quantidade restante";
+                    if (!isHeaderRow) continue;
+
+                    for (let nextIndex = rowIndex + 1; nextIndex < rows.length; nextIndex += 1) {
+                        const nextRow = rows[nextIndex];
+                        const nextBlockName = normalizeText(nextRow[13] || "");
+                        if (!nextBlockName) break;
+                        if (["pacote"].includes(nextBlockName) || stockBlocks.some((block) => normalizeText(block.name) === nextBlockName && normalizeText(rows[nextIndex][14] || "") === "quantidade")) {
+                            break;
+                        }
+                        const quantity = toNumber(nextRow[14] || "0");
+                        const sold = toNumber(nextRow[15] || "0");
+                        const remaining = toNumber(nextRow[16] || "0");
+                        if (quantity === 0 && sold === 0 && remaining === 0) continue;
+                        stockBlocks[blockIndex].total += quantity;
+                        stockBlocks[blockIndex].sold += sold;
+                        stockBlocks[blockIndex].remaining += remaining;
+                    }
+                }
+
+                const totalVendas = stockBlocks.reduce((sum, block) => sum + block.sold, 0);
+                const totalEstoqueRestante = stockBlocks.reduce((sum, block) => sum + block.remaining, 0);
+                const maxSold = Math.max(...stockBlocks.map((block) => block.sold), 1);
+
+                stockBlocks.forEach((block) => {
+                    const idMap = {
+                        "AMARELA": "barra-amarela",
+                        "AZUL": "barra-azul",
+                        "AMAR.FEM": "barra-amar-fem",
+                        "AZUL.FEM": "barra-azul-fem"
+                    };
+                    const progressMap = {
+                        "AMARELA": "progresso-amarela",
+                        "AZUL": "progresso-azul",
+                        "AMAR.FEM": "progresso-amar-fem",
+                        "AZUL.FEM": "progresso-azul-fem"
+                    };
+                    const barHeight = Math.max(10, Math.round((block.sold / maxSold) * 100));
+                    const soldPercent = block.total > 0 ? Math.round((block.sold / block.total) * 100) : 0;
+
+                    const barEl = document.getElementById(idMap[block.name]);
+                    if (barEl) {
+                        barEl.style.height = `${barHeight}%`;
+                        const valueSpan = barEl.querySelector(".bar-value");
+                        const labelSpan = barEl.querySelector(".bar-label");
+                        if (valueSpan) valueSpan.textContent = String(block.sold);
+                        if (labelSpan) labelSpan.textContent = block.name;
+                    }
+
+                    updateProgress(progressMap[block.name], soldPercent);
+                });
+
+                setCardValues({
+                    receita: document.getElementById("card-receita-valor")?.textContent || "0",
+                    lucro: document.getElementById("card-lucro-valor")?.textContent || "0",
+                    totalVendas,
+                    totalEstoqueRestante
+                });
+
+                const clientHeaderIndex = findHeaderIndex(rows, ["Cliente", "Metodo de pagamento", "Valor Pago"]);
+                if (clientHeaderIndex >= 0) {
+                    const clientHeader = rows[clientHeaderIndex];
+                    const clienteCol = getColumnIndex(clientHeader, "Cliente");
+                    const metodoCol = getColumnIndex(clientHeader, "Metodo de pagamento");
+                    const valorCol = getColumnIndex(clientHeader, "Valor Pago");
+                    const clients = [];
+
+                    for (let nextIndex = clientHeaderIndex + 1; nextIndex < rows.length; nextIndex += 1) {
+                        const nextRow = rows[nextIndex];
+                        const name = nextRow[clienteCol] || "";
+                        const method = nextRow[metodoCol] || "";
+                        const value = nextRow[valorCol] || "";
+                        if (!name && !method && !value) break;
+                        if (!name || !method) continue;
+                        clients.push({
+                            name,
+                            method,
+                            value: formatCurrency(value),
+                            date: new Date().toLocaleDateString("pt-BR")
+                        });
+                    }
+
+                    renderClientRows(clients);
+                }
+            } catch (error) {
+                console.error("Erro ao carregar dados do dashboard:", error);
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            updateDateTime();
+            applySavedMode();
+            applyStoredProfile();
+            carregarDadosDashboard();
+        });
+    </script>
+</body>
+</html>

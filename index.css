@@ -36,10 +36,38 @@ nav a {
     padding: 0.25rem 0.5rem;
 }
 
+.nav-action {
+    display: flex;
+}
+
+.dashboard-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, #ff7a18 0%, #af1dff 100%);
+    color: white;
+    border-radius: 999px;
+    padding: 0.75rem 1.2rem;
+    font-weight: 700;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dashboard-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
+}
+
 @media (max-width: 760px) {
     nav a {
         margin-left: 0; /* reset for stacked layout */
         padding: 0.15rem 0;
+    }
+    .nav-action {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    .dashboard-btn {
+        width: 100%;
+        text-align: center;
+        padding: 0.85rem 1rem;
     }
 }
 .hero {
@@ -161,7 +189,7 @@ footer {
 a {
     text-decoration: none;
     color: #333333;
-    transitions: color 0.2s ease;
+    transition: color 0.2s ease;
 }
 a:hover {
     color: #007acc;

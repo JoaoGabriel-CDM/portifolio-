@@ -151,272 +151,184 @@
 
     </div>
 
-    <script>
-        function updateDateTime() {
-            const now = new Date();
-            const options = {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit"
-            };
-            document.getElementById("datetime").textContent = now.toLocaleDateString("pt-BR", options);
-        }
+                    <script>
+function updateDateTime() {
+    const now = new Date();
+    const options = {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+    };
+    const datetime = document.getElementById("datetime");
+    if (datetime) {
+        datetime.textContent = now.toLocaleDateString("pt-BR", options);
+    }
+}
 
-        function applySavedMode() {
-            const saved = localStorage.getItem("darkMode");
-            if (saved === "on") {
-                document.body.classList.add("dark-mode");
-            } else {
-                document.body.classList.remove("dark-mode");
-            }
-        }
+function applySavedMode() {
+    const saved = localStorage.getItem("darkMode");
+    if (saved === "on") {
+        document.body.classList.add("dark-mode");
+    } else {
+        document.body.classList.remove("dark-mode");
+    }
+}
 
-        function formatInitials(fullName) {
-            const parts = fullName.trim().split(/\s+/).filter(Boolean);
-            if (parts.length === 0) return "??";
-            if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-        }
+function formatInitials(fullName) {
+    const parts = fullName.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return "??";
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
-        function applyStoredProfile() {
-            const name = localStorage.getItem("profileName") || "João Gabriel";
-            const avatar = document.getElementById("dashboardAvatar");
-            const nameEl = document.getElementById("dashboardUserName");
-            if (avatar) avatar.textContent = formatInitials(name);
-            if (nameEl) nameEl.textContent = name.length > 30 ? name.slice(0, 30) + "…" : name;
-        }
+function applyStoredProfile() {
+    const name = localStorage.getItem("profileName") || "João Gabriel";
+    const avatar = document.getElementById("dashboardAvatar");
+    const nameEl = document.getElementById("dashboardUserName");
+    if (avatar) avatar.textContent = formatInitials(name);
+    if (nameEl) nameEl.textContent = name.length > 30 ? name.slice(0, 30) + "…" : name;
+}
 
-        function normalizeText(value) {
-            return String(value || '')
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '')
-                .toLowerCase()
-                .trim();
-        }
+window.onload = async function carregarDadosDashboard() {
+    updateDateTime();
+    applySavedMode();
+    applyStoredProfile();
 
-        function parseCSV(csvText) {
-            return csvText
-                .replace(/\r/g, '')
-                .split('\n')
-                .map((line) => line.trim())
-                .filter((line) => line.split(';').some((cell) => cell.trim() !== ''))
-                .map((line) => line.split(';').map((cell) => cell.trim()));
-        }
+    try {
+        const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTMzFzlSDwUT0Q9s-rnZiRWW0VIz5W09lz6qm_vE_nCIybGKQ9UTXbkA_F9deydKymZ4_5dzcCixJPI/pub?output=csv';
+        const resposta = await fetch(url);
+        const textoCSV = await resposta.text();
+        
+        // Quebra as linhas limpando retornos de carro
+        const linhas = textoCSV.split(/\r?\n/);
+        
+        const estoque = {
+            'AMARELA': { total: 0, vendido: 0 },
+            'AZUL': { total: 0, vendido: 0 },
+            'AMAR.FEM': { total: 0, vendido: 0 },
+            'AZUL.FEM': { total: 0, vendido: 0 }
+        };
+        
+        let blocoAtual = null;
+        const tabelaClientesBody = document.getElementById('recentActivityBody');
+        if (tabelaClientesBody) tabelaClientesBody.innerHTML = '';
 
-        function toNumber(value) {
-            const numeric = parseFloat(
-                String(value || '')
-                    .replace(/\./g, '')
-                    .replace(/,/g, '.')
-                    .replace(/[^0-9.\-]/g, '')
-            );
-            return Number.isNaN(numeric) ? 0 : numeric;
-        }
-function formatCurrency(value) {
-            const number = toNumber(value);
-            return number.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
+        for (let i = 0; i < linhas.length; i++) {
+            let linha = linhas[i].trim();
+            if (!linha) continue;
+
+            // Divide por vírgula considerando possíveis aspas do Sheets
+            let colunas = linha.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+            // Limpa as aspas de todas as células de forma robusta
+            let dados = colunas.map(c => c.replace(/^"|"$/g, '').trim());
+
+            // 1. FINANCEIRO (Busca dinâmica por texto em qualquer coluna)
+            dados.forEach((celula, idx) => {
+                if (celula.includes("Total Recebido") && dados[idx + 1]) {
+                    faturamento = parseFloat(dados[idx + 1].replace(/\./g, '').replace(',', '.')) || 0;
+                }
+                if (celula.includes("Lucro") && dados[idx + 1]) {
+                    lucro = parseFloat(dados[idx + 1].replace(/\./g, '').replace(',', '.')) || 0;
+                }
             });
-        }
 
-        function findHeaderIndex(rows, terms) {
-            return rows.findIndex((row) =>
-                terms.every((term) => row.some((cell) => normalizeText(cell).includes(normalizeText(term))))
-            );
-        }
+            // 2. ESTOQUE (Busca nas colunas centrais)
+            for (let j = 0; j < dados.length; j++) {
+                let valorCaixaalta = dados[j].toUpperCase();
+                if (['AMARELA', 'AZUL', 'AMAR.FEM', 'AZUL.FEM'].includes(valorCaixaalta)) {
+                    blocoAtual = valorCaixaalta;
+                }
+            }
 
-        function getColumnIndex(row, term) {
-            return row.findIndex((cell) => normalizeText(cell).includes(normalizeText(term)));
-        }
+            if (blocoAtual && ['P', 'M', 'G', 'GG'].includes(dados[4])) {
+                let qtdTotal = parseInt(dados[5]) || 0;
+                let qtdVendida = parseInt(dados[6]) || 0;
+                
+                estoque[blocoAtual].total += qtdTotal;
+                estoque[blocoAtual].vendido += qtdVendida;
+                totalVendas += qtdVendida;
+            }
 
-        function setCardValues(summary) {
-            const receitaEl = document.getElementById("card-receita-valor");
-            const lucroEl = document.getElementById("card-lucro-valor");
-            const vendasEl = document.getElementById("card-vendas-valor");
-            const estoqueEl = document.getElementById("card-estoque-restante-valor");
-            if (receitaEl) {
-                receitaEl.textContent = formatCurrency(summary.receita);
-            }
-            if (lucroEl) {
-                lucroEl.textContent = formatCurrency(summary.lucro);
-                lucroEl.style.color = summary.lucro < 0 ? "#ff4d4f" : "";
-            }
-            if (vendasEl) {
-                vendasEl.textContent = String(summary.totalVendas);
-            }
-            if (estoqueEl) {
-                estoqueEl.textContent = String(summary.totalEstoqueRestante);
-            }
-        }
-
-        function updateProgress(id, percent) {
-            const progressItem = document.getElementById(id);
-            if (!progressItem) return;
-            const percentEl = progressItem.querySelector(".progress-percent");
-            const fillEl = progressItem.querySelector(".progress-fill");
-            if (percentEl) {
-                percentEl.textContent = `${percent}%`;
-            }
-            if (fillEl) {
-                fillEl.style.width = `${percent}%`;
-            }
-        }
-
-        function renderClientRows(clients) {
-            const tbody = document.getElementById("recentActivityBody");
-            if (!tbody) return;
-            tbody.innerHTML = "";
-            clients.forEach((client, index) => {
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>#PED-${String(index + 1).padStart(3, "0")}</td>
-                    <td>${client.name}</td>
-                    <td>${client.date}</td>
-                    <td>${client.value}</td>
-                    <td><span class="status-badge status-active"><i class="fas fa-check-circle"></i> Completado</span></td>
+            // 3. CLIENTES ATIVIDADE RECENTE
+            if (dados[11] && i > 1 && !dados[11].includes("Cliente") && !dados[11].includes("Total") && !dados[11].includes("Lucro")) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${dados[11]}</td>
+                    <td>${dados[12] || '—'}</td>
+                    <td>${dados[13] || '—'}</td>
+                    <td>${dados[14] || '—'}</td>
+                    <td>${dados[15] || '—'}</td>
+                    <td>${dados[16] ? 'R$ ' + dados[16] : '—'}</td>
                 `;
-                tbody.appendChild(row);
-            });
-        }
-
-        async function carregarDadosDashboard() {
-            try {
-                const response = await fetch("Gastos.Ganhos.csv");
-                if (!response.ok) {
-                    throw new Error(`Falha no fetch: ${response.status}`);
-                }
-                const csvText = await response.text();
-                const rows = parseCSV(csvText);
-
-                const summaryHeaderIndex = findHeaderIndex(rows, ["Total Recebido", "Lucro"]);
-                if (summaryHeaderIndex >= 0 && rows[summaryHeaderIndex + 1]) {
-                    const headerRow = rows[summaryHeaderIndex];
-                    const dataRow = rows[summaryHeaderIndex + 1];
-                    const receitaIndex = getColumnIndex(headerRow, "Total Recebido");
-                    const lucroIndex = getColumnIndex(headerRow, "Lucro");
-                    setCardValues({
-                        receita: dataRow[receitaIndex] || "0",
-                        lucro: dataRow[lucroIndex] || "0",
-                        totalVendas: 0,
-                        totalEstoqueRestante: 0
-                    });
-                }
-
-                const stockBlocks = ["AMARELA", "AZUL", "AMAR.FEM", "AZUL.FEM"].map((name) => ({
-                    name,
-                    total: 0,
-                    sold: 0,
-                    remaining: 0
-                }));
-
-                for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
-                    const row = rows[rowIndex];
-                    const blockName = normalizeText(row[13] || "");
-                    const blockIndex = stockBlocks.findIndex((block) => normalizeText(block.name) === blockName);
-                    if (blockIndex < 0) continue;
-                    const isHeaderRow = normalizeText(row[14] || "") === "quantidade" &&
-                        normalizeText(row[15] || "") === "quantidade vendida" &&
-                        normalizeText(row[16] || "") === "quantidade restante";
-                    if (!isHeaderRow) continue;
-
-                    for (let nextIndex = rowIndex + 1; nextIndex < rows.length; nextIndex += 1) {
-                        const nextRow = rows[nextIndex];
-                        const nextBlockName = normalizeText(nextRow[13] || "");
-                        if (!nextBlockName) break;
-                        if (["pacote"].includes(nextBlockName) || stockBlocks.some((block) => normalizeText(block.name) === nextBlockName && normalizeText(rows[nextIndex][14] || "") === "quantidade")) {
-                            break;
-                        }
-                        const quantity = toNumber(nextRow[14] || "0");
-                        const sold = toNumber(nextRow[15] || "0");
-                        const remaining = toNumber(nextRow[16] || "0");
-                        if (quantity === 0 && sold === 0 && remaining === 0) continue;
-                        stockBlocks[blockIndex].total += quantity;
-                        stockBlocks[blockIndex].sold += sold;
-                        stockBlocks[blockIndex].remaining += remaining;
-                    }
-                }
-
-                const totalVendas = stockBlocks.reduce((sum, block) => sum + block.sold, 0);
-                const totalEstoqueRestante = stockBlocks.reduce((sum, block) => sum + block.remaining, 0);
-                const maxSold = Math.max(...stockBlocks.map((block) => block.sold), 1);
-
-                stockBlocks.forEach((block) => {
-                    const idMap = {
-                        "AMARELA": "barra-amarela",
-                        "AZUL": "barra-azul",
-                        "AMAR.FEM": "barra-amar-fem",
-                        "AZUL.FEM": "barra-azul-fem"
-                    };
-                    const progressMap = {
-                        "AMARELA": "progresso-amarela",
-                        "AZUL": "progresso-azul",
-                        "AMAR.FEM": "progresso-amar-fem",
-                        "AZUL.FEM": "progresso-azul-fem"
-                    };
-                    const barHeight = Math.max(10, Math.round((block.sold / maxSold) * 100));
-                    const soldPercent = block.total > 0 ? Math.round((block.sold / block.total) * 100) : 0;
-
-                    const barEl = document.getElementById(idMap[block.name]);
-                    if (barEl) {
-                        barEl.style.height = `${barHeight}%`;
-                        const valueSpan = barEl.querySelector(".bar-value");
-                        const labelSpan = barEl.querySelector(".bar-label");
-                        if (valueSpan) valueSpan.textContent = String(block.sold);
-                        if (labelSpan) labelSpan.textContent = block.name;
-                    }
-
-                    updateProgress(progressMap[block.name], soldPercent);
-                });
-
-                setCardValues({
-                    receita: document.getElementById("card-receita-valor")?.textContent || "0",
-                    lucro: document.getElementById("card-lucro-valor")?.textContent || "0",
-                    totalVendas,
-                    totalEstoqueRestante
-                });
-
-                const clientHeaderIndex = findHeaderIndex(rows, ["Cliente", "Metodo de pagamento", "Valor Pago"]);
-                if (clientHeaderIndex >= 0) {
-                    const clientHeader = rows[clientHeaderIndex];
-                    const clienteCol = getColumnIndex(clientHeader, "Cliente");
-                    const metodoCol = getColumnIndex(clientHeader, "Metodo de pagamento");
-                    const valorCol = getColumnIndex(clientHeader, "Valor Pago");
-                    const clients = [];
-
-                    for (let nextIndex = clientHeaderIndex + 1; nextIndex < rows.length; nextIndex += 1) {
-                        const nextRow = rows[nextIndex];
-                        const name = nextRow[clienteCol] || "";
-                        const method = nextRow[metodoCol] || "";
-                        const value = nextRow[valorCol] || "";
-                        if (!name && !method && !value) break;
-                        if (!name || !method) continue;
-                        clients.push({
-                            name,
-                            method,
-                            value: formatCurrency(value),
-                            date: new Date().toLocaleDateString("pt-BR")
-                        });
-                    }
-
-                    renderClientRows(clients);
-                }
-            } catch (error) {
-                console.error("Erro ao carregar dados do dashboard:", error);
+                if (tabelaClientesBody) tabelaClientesBody.appendChild(tr);
             }
         }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            updateDateTime();
-            applySavedMode();
-            applyStoredProfile();
-            carregarDadosDashboard();
+        // CÁLCULO DE ITENS RESTANTES
+        let totalRestante = 0;
+        Object.keys(estoque).forEach(key => {
+            totalRestante += (estoque[key].total - estoque[key].vendido);
         });
-    </script>
+
+        // INJEÇÃO DOS VALORES FORMATADOS NOS CARDS
+        const receitaEl = document.getElementById('card-receita-valor');
+        if (receitaEl) {
+            receitaEl.textContent = `R$ ${faturamento.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        }
+        
+        const cardLucro = document.getElementById('card-lucro-valor');
+        if (cardLucro) {
+            cardLucro.textContent = `R$ ${lucro.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            cardLucro.style.color = lucro < 0 ? '#ef4444' : '#10b981';
+        }
+
+        const estoqueRestanteEl = document.getElementById('card-estoque-restante-valor');
+        if (estoqueRestanteEl) {
+            estoqueRestanteEl.textContent = totalRestante;
+        }
+
+        const vendasEl = document.getElementById('card-vendas-valor');
+        if (vendasEl) {
+            vendasEl.textContent = totalVendas;
+        }
+
+        // ATUALIZAÇÃO DO GRÁFICO VERTICAL
+        const atualizarBar = (id, valor) => {
+            const elemento = document.getElementById(id);
+            if (elemento) {
+                elemento.style.height = `${valor * 30}px`;
+                elemento.textContent = valor;
+            }
+        };
+
+        atualizarBar('barra-amarela', estoque['AMARELA'].vendido);
+        atualizarBar('barra-azul', estoque['AZUL'].vendido);
+        atualizarBar('barra-amar-fem', estoque['AMAR.FEM'].vendido);
+        atualizarBar('barra-azul-fem', estoque['AZUL.FEM'].vendido);
+
+        // ATUALIZAÇÃO DAS METAS HORIZONTAIS
+        const aplicarMeta = (id, vend, tot) => {
+            const pct = tot > 0 ? Math.round((vend / tot) * 100) : 0;
+            const el = document.getElementById(id);
+            if (el) {
+                el.style.width = `${pct}%`;
+                const label = el.parentElement.parentElement.querySelector('.progress-percentage');
+                if (label) label.textContent = `${pct}%`;
+            }
+        };
+
+        aplicarMeta('progresso-amarela', estoque['AMARELA'].vendido, estoque['AMARELA'].total);
+        aplicarMeta('progresso-azul', estoque['AZUL'].vendido, estoque['AZUL'].total);
+        aplicarMeta('progresso-amar-fem', estoque['AMAR.FEM'].vendido, estoque['AMAR.FEM'].total);
+        aplicarMeta('progresso-azul-fem', estoque['AZUL.FEM'].vendido, estoque['AZUL.FEM'].total);
+
+    } catch (e) {
+        console.error('Erro na atualização do painel:', e);
+    }
+};
+</script>
 </body>
 </html>

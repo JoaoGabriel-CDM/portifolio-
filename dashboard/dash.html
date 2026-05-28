@@ -471,6 +471,18 @@
       <i class="fa-solid fa-triangle-exclamation" style="margin-right:6px;"></i>
       Esta conta não tem permissão de acesso. Peça ao administrador para adicionar seu e-mail à lista de usuários.
     </div>
+
+    <!-- Botão voltar para a loja -->
+    <a href="../index.html" style="
+      display:inline-flex; align-items:center; gap:8px;
+      margin-top:14px; padding:10px 20px; border-radius:8px;
+      background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
+      color:var(--muted); font-size:13px; text-decoration:none;
+      transition:background .2s, color .2s;
+    " onmouseover="this.style.background='rgba(255,255,255,0.10)';this.style.color='#fff'"
+       onmouseout="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--muted)'">
+      <i class="fa-solid fa-arrow-left"></i> Voltar para a Loja
+    </a>
   </div>
 </div>
 
@@ -504,6 +516,14 @@
       <button class="nav-btn" id="btn-inventario" onclick="trocarAba('inventario')">
         <i class="fa-solid fa-warehouse icon"></i> Inventário
       </button>
+      <a href="../index.html" class="nav-btn" style="
+        display:flex; align-items:center; gap:10px; text-decoration:none;
+        margin-top:8px; border-top:1px solid var(--border); padding-top:14px;
+        color:var(--muted);
+      " onmouseover="this.style.background='rgba(255,255,255,0.04)';this.style.color='var(--txt)'"
+         onmouseout="this.style.background='';this.style.color='var(--muted)'">
+        <i class="fa-solid fa-store icon"></i> Página da Loja
+      </a>
     </nav>
 
     <!-- Usuário logado -->
@@ -797,18 +817,16 @@
 // ╚══════════════════════════════════════════════════════════════╝
 
 const CONFIG = {
-  CLIENT_ID: 'SEU_CLIENT_ID_AQUI.apps.googleusercontent.com',
+  CLIENT_ID: '483232665914-efu3c5mvsnu8dh4acp6guq6lk4ku1kce.apps.googleusercontent.com',
 
   // ─── E-mails autorizados (adicione todos os vendedores) ───────
   ALLOWED_EMAILS: [
     'joao0805.oliveira@gmail.com',
     'dantejabbur@gmail.com',
-    'vendedor2@gmail.com',
-    // adicione quantos precisar...
   ],
 
   // ─── URL do Apps Script (leitura sem cache + escrita) ─────────
-  APPS_SCRIPT_URL: 'COLE_A_URL_DO_SEU_APPS_SCRIPT_AQUI',
+  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyWD3lbchI9Y-O49xKKBsnuS4LqahcP2XWGghyMpVeCvNa1feNWtbFIrO0x657WuPZZpw/exec', // ← substitua pela URL após criar o Apps Script (instruções abaixo)
 
   // ─── URL CSV público (fallback se não tiver Apps Script) ──────
   CSV_URL: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQeziQ2L-3XrZBYmfBkW6KRt8-dby34QEfH88E0pIiTX34h35Vejrp2PHrhua60Pg/pub?gid=1893955553&single=true&output=csv',
@@ -930,20 +948,15 @@ async function carregarDashboard() {
   document.getElementById('syncBadge').className = 'badge badge-blue';
 
   try {
-    let linhas;
-    const useScript = CONFIG.APPS_SCRIPT_URL &&
-                      CONFIG.APPS_SCRIPT_URL !== 'COLE_A_URL_DO_SEU_APPS_SCRIPT_AQUI';
-
-    if (useScript) {
-      // Apps Script: leitura sem cache direto da planilha
-      const res  = await fetch(`${CONFIG.APPS_SCRIPT_URL}?action=getData&t=${Date.now()}`);
-      const text = await res.text();
-      linhas = text.split(/\r?\n/);
-    } else {
-      // Fallback: CSV público (pode ter atraso de ~5 min do Google)
-      const res  = await fetch(`${CONFIG.CSV_URL}&cache=${Date.now()}`);
-      linhas = (await res.text()).split(/\r?\n/);
-    }
+    // Leitura sempre via CSV público (evita problemas de CORS com Apps Script)
+    // Escrita (Nova Venda / editar estoque) continua usando Apps Script via POST
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000); // timeout de 15s
+    const res = await fetch(`${CONFIG.CSV_URL}&cache=${Date.now()}`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    const linhas = (await res.text()).split(/\r?\n/);
 
     processarDados(linhas);
 
@@ -1196,91 +1209,120 @@ function abrirModalEstoque(produto, tamanho, comprado, vendido) {
   document.getElementById('modalEstoque').classList.add('show');
 }
 
+a// ══════════════════════════════════════════════════════════════════════
+// Função para Salvar Alterações de Estoque (Edição Directa)
+// ══════════════════════════════════════════════════════════════════════
 async function salvarEdicaoEstoque() {
-  if (!editando) return;
-  if (!verificarScript()) return;
+  const btn = document.getElementById('btnSalvarEstoque');
+  const produto = document.getElementById('editProduto').value;
+  const tamanho = document.getElementById('editTamanho').value;
+  const comprado = document.getElementById('editComprado').value;
+  const vendido = document.getElementById('editVendido').value;
 
   const payload = {
-    action:   'updateEstoque',
-    produto:  editando.produto,
-    tamanho:  editando.tamanho,
-    comprado: parseInt(document.getElementById('edit-comprado').value) || 0,
-    vendido:  parseInt(document.getElementById('edit-vendido').value)  || 0,
+    action: 'updateEstoque',
+    produto: produto,
+    tamanho: tamanho,
+    comprado: parseInt(comprado) || 0,
+    vendido: parseInt(vendido) || 0
   };
 
-  const btn = document.getElementById('btnConfirmEstoque');
   btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Salvando...';
 
   try {
-    await fetch(CONFIG.APPS_SCRIPT_URL, {
-      method: 'POST', mode: 'no-cors',
-      body: JSON.stringify(payload),
+    // IMPORTANTE: Enviamos sem cabeçalho Content-Type complexo para o Google aceitar o CORS nativo
+    const resposta = await fetch(CONFIG.APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload)
     });
-    await esperar(1800);
-    fecharModal('modalEstoque');
-    await carregarDashboard();
-    toast('Estoque atualizado!',
-      `${editando.produto} ${editando.tamanho} salvo na planilha.`,
-      'success');
-    editando = null;
-  } catch(e) {
-    toast('Erro ao salvar', 'Verifique a URL do Apps Script.', 'error');
+
+    if (!resposta.ok) {
+      throw new Error(`Erro de rede do servidor (Status HTTP ${resposta.status})`);
+    }
+
+    const resultado = await resposta.json();
+
+    if (resultado.ok) {
+      toast('Sucesso!', resultado.mensagem || 'Estoque atualizado com sucesso!', 'success');
+      fecharModal('modalEstoque');
+      await esperar(1000);
+      carregarDashboard(); // Atualiza a tabela na tela
+    } else {
+      throw new Error(resultado.erro || 'Erro desconhecido retornado pelo servidor.');
+    }
+
+  } catch (erro) {
+    console.error('Falha ao atualizar estoque:', erro);
+    toast('Erro ao Salvar', erro.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-check mr-2"></i>Salvar Alterações';
   }
-  btn.disabled = false;
-  btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar na Planilha';
 }
 
-// ══════════════════════════════════════════════════════════════
-// UTILITÁRIOS
-// ══════════════════════════════════════════════════════════════
-function verificarScript() {
-  if (!CONFIG.APPS_SCRIPT_URL ||
-      CONFIG.APPS_SCRIPT_URL === 'COLE_A_URL_DO_SEU_APPS_SCRIPT_AQUI') {
-    toast('Apps Script não configurado',
-      'Configure a URL do Apps Script para habilitar edição.',
-      'error');
-    return false;
+// ══════════════════════════════════════════════════════════════════════
+// Função para Registrar Nova Venda pelo Painel Admin
+// ══════════════════════════════════════════════════════════════════════
+async function salvarVenda() {
+  const btn = document.getElementById('btnSalvarVenda');
+  const cliente = document.getElementById('vendaCliente').value.trim();
+  const metodo = document.getElementById('vendaMetodo').value;
+  const tamanho = document.getElementById('vendaTamanho').value;
+  const qtd = document.getElementById('vendaQtd').value;
+  const cor = document.getElementById('vendaCor').value;
+  const valor = document.getElementById('vendaValor').value;
+
+  if (!cliente || !cor || !tamanho || !qtd || !valor) {
+    toast('Campos Incompletos', 'Por favor, preencha todos os campos obrigatórios.', 'error');
+    return;
   }
-  return true;
-}
 
-function esperar(ms) {
-  return new Promise(r => setTimeout(r, ms));
-}
+  const payload = {
+    action: 'addVenda',
+    cliente: cliente,
+    metodo: metodo,
+    tamanho: tamanho,
+    qtd: parseInt(qtd) || 1,
+    cor: cor,
+    valor: valor
+  };
 
-let toastTimer;
-function toast(titulo, msg, tipo = 'success') {
-  const el = document.getElementById('toast');
-  const ic = document.getElementById('toastIcon');
-  document.getElementById('toastTitle').textContent = titulo;
-  document.getElementById('toastMsg').textContent   = msg;
-  ic.className   = tipo === 'error' ? 'fa-solid fa-circle-xmark' : 'fa-solid fa-circle-check';
-  ic.style.color = tipo === 'error' ? '#f87171' : '#34d399';
-  el.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 4500);
-}
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Processando...';
 
-function escHtml(str) {
-  return String(str || '')
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
+  try {
+    // Executa a requisição limpa para garantir compatibilidade com CORS Simple Request
+    const resposta = await fetch(CONFIG.APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
 
-// Fechar modais clicando fora
-document.querySelectorAll('.overlay').forEach(overlay => {
-  overlay.addEventListener('click', e => {
-    if (e.target === overlay) overlay.classList.remove('show');
-  });
-});
+    if (!resposta.ok) {
+      throw new Error(`Erro de rede do servidor (Status HTTP ${resposta.status})`);
+    }
 
-// ══════════════════════════════════════════════════════════════
-// INIT — O loader começa oculto; tudo começa pelo login Google
-// ══════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('loader').classList.add('hidden');
-});
-</script>
-</body>
-</html>
+    const resultado = await resposta.json();
+
+    if (resultado.ok) {
+      toast('Sucesso!', resultado.mensagem || 'Venda registrada com sucesso!', 'success');
+      fecharModal('modalVenda');
+      // Limpa formulário
+      document.getElementById('vendaCliente').value = '';
+      document.getElementById('vendaQtd').value = '1';
+      document.getElementById('vendaValor').value = '';
+      
+      await esperar(1000);
+      carregarDashboard(); // Atualiza a tela com as novas métricas
+    } else {
+      throw new Error(resultado.erro || 'Erro interno ao salvar os dados da venda.');
+    }
+
+  } catch (erro) {
+    console.error('Falha ao registrar venda:', erro);
+    toast('Erro na Operação', erro.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-basket-shopping mr-2"></i>Confirmar Venda';
+  }
+};
